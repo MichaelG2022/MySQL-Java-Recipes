@@ -1,5 +1,6 @@
 package recipes.dao;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,44 +29,47 @@ public class RecipeDao extends DaoBase {
 	private static final String RECIPE_CATEGORY_TABLE = "recipe_category";
 	private static final String STEP_TABLE = "step";
 	private static final String UNIT_TABLE = "unit";
-	
+
 	public Optional<Recipe> fetchRecipeById(Integer recipeId) {
 		String sql = "SELECT * FROM " + RECIPE_TABLE + " WHERE recipe_id = ?";
-		
-		try(Connection conn = DbConnection.getConnection()) {
+
+		try (Connection conn = DbConnection.getConnection()) {
 			startTransaction(conn);
-			
+
 			try {
 				Recipe recipe = null;
-				
-				try(PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+				try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 					setParameter(stmt, 1, recipeId, Integer.class);
-					
-					try(ResultSet rs = stmt.executeQuery()) {
-						if(rs.next()) {
+
+					try (ResultSet rs = stmt.executeQuery()) {
+						if (rs.next()) {
 							recipe = extract(rs, Recipe.class);
 						}
 					}
 				}
-				if(Objects.nonNull(recipe)) {
-					recipe.getIngredients().addAll(fetchRecipeIngredients(conn, recipeId));					
-					recipe.getSteps().addAll(fetchRecipeSteps(conn, recipeId));					
-					recipe.getCategories().addAll(fetchRecipeCategories(conn, recipeId));					
+				if (Objects.nonNull(recipe)) {
+					recipe.getIngredients().addAll(fetchRecipeIngredients(conn, recipeId));
+					recipe.getSteps().addAll(fetchRecipeSteps(conn, recipeId));
+					recipe.getCategories().addAll(fetchRecipeCategories(conn, recipeId));
 				}
 				commitTransaction(conn);
 				return Optional.ofNullable(recipe);
-			}
-			catch(Exception e) {
+			} catch (Exception e) {
 				rollbackTransaction(conn);
 				throw new DbException(e);
 			}
-		}
-		catch(SQLException e) {
+		} catch (SQLException e) {
 			throw new DbException(e);
 		}
-		
+
 	}
 
+	/*
+	 * Fixed red squigglies while typing by letting Java add "throws SQLException to
+	 * method name. The exception is already defined in the fetchRecipeById method,
+	 * which calls this method.
+	 */
 	private List<Category> fetchRecipeCategories(Connection conn, Integer recipeId) throws SQLException {
 		// @formatter:off
 		String sql = ""
@@ -75,33 +79,38 @@ public class RecipeDao extends DaoBase {
 			+ "WHERE recipe_id = ? "
 			+ "ORDER BY c.category_name";
 		// @formatter:on
-		
-		try(PreparedStatement stmt = conn.prepareStatement(sql)) {
-			setParameter(stmt, 1, recipeId,  Integer.class);
-			
-			try(ResultSet rs = stmt.executeQuery()) {
+
+		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+			setParameter(stmt, 1, recipeId, Integer.class);
+
+			try (ResultSet rs = stmt.executeQuery()) {
 				List<Category> categories = new LinkedList<Category>();
-				
-				while(rs.next()) {
+
+				while (rs.next()) {
 					categories.add(extract(rs, Category.class));
 				}
 				return categories;
-				
+
 			}
 		}
 
 	}
 
+	/*
+	 * Fixed red squigglies while typing by letting Java add "throws SQLException to
+	 * method name. The exception is already defined in the fetchRecipeById method,
+	 * which calls this method.
+	 */
 	private List<Step> fetchRecipeSteps(Connection conn, Integer recipeId) throws SQLException {
 		String sql = "SELECT * FROM " + STEP_TABLE + " s WHERE s.recipe_id = ?";
-		
-		try(PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 			setParameter(stmt, 1, recipeId, Integer.class);
-			
-			try(ResultSet rs = stmt.executeQuery()) {
+
+			try (ResultSet rs = stmt.executeQuery()) {
 				List<Step> steps = new LinkedList<Step>();
-				
-				while(rs.next()) {
+
+				while (rs.next()) {
 					steps.add(extract(rs, Step.class));
 				}
 				return steps;
@@ -110,9 +119,9 @@ public class RecipeDao extends DaoBase {
 	}
 
 	/*
-	 * i. means alias i for ingredient table
-	 * u. means alias u for unit table
-	 * Fixed red squigglies while typing by letting Java add "throws SQLException to method name
+	 * Fixed red squigglies while typing by letting Java add "throws SQLException to
+	 * method name. The exception is already defined in the fetchRecipeById method,
+	 * which calls this method.
 	 */
 	private List<Ingredient> fetchRecipeIngredients(Connection conn, Integer recipeId) throws SQLException {
 		// @formatter:off
@@ -123,23 +132,23 @@ public class RecipeDao extends DaoBase {
 			+ "WHERE  recipe_id = ? "
 			+ "ORDER BY i.ingredient_order";
 		// @formatter:on
-		
-		 try(PreparedStatement stmt = conn.prepareStatement(sql)) {
-			 setParameter(stmt, 1, recipeId, Integer.class);
-			 
-			 try(ResultSet rs = stmt.executeQuery()) {
-				 List<Ingredient> ingredients = new LinkedList<Ingredient>();
-				 
-				 while(rs.next()) {
-					 Ingredient ingredient = extract(rs, Ingredient.class);
-					 Unit unit = extract(rs, Unit.class);
-					 
-					 ingredient.setUnit(unit);
-					 ingredients.add(ingredient);
-				 }
-				 return ingredients;
-			 }
-		 }
+
+		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+			setParameter(stmt, 1, recipeId, Integer.class);
+
+			try (ResultSet rs = stmt.executeQuery()) {
+				List<Ingredient> ingredients = new LinkedList<Ingredient>();
+
+				while (rs.next()) {
+					Ingredient ingredient = extract(rs, Ingredient.class);
+					Unit unit = extract(rs, Unit.class);
+
+					ingredient.setUnit(unit);
+					ingredients.add(ingredient);
+				}
+				return ingredients;
+			}
+		}
 	}
 
 	public List<Recipe> fetchAllRecipes() {
@@ -220,5 +229,239 @@ public class RecipeDao extends DaoBase {
 			throw new DbException(e);
 		}
 	}
+
+	public List<Unit> fetchAllUnits() {
+		String sql = "SELECT * FROM " + UNIT_TABLE + " ORDER BY unit_name_singular";
+
+		try (Connection conn = DbConnection.getConnection()) {
+			startTransaction(conn);
+
+			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+				try (ResultSet rs = stmt.executeQuery()) {
+					List<Unit> units = new LinkedList<>();
+
+					while (rs.next()) {
+						units.add(extract(rs, Unit.class));
+					}
+
+					return units;
+				}
+
+			} catch (Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+
+		} catch (SQLException e) {
+			throw new DbException(e);
+		}
+
+	}
+
+	public void addIngredientToRecipe(Ingredient ingredient) {
+		// @formatter:off
+		String sql = "INSERT INTO " + INGREDIENT_TABLE
+			+ " (recipe_id, unit_id, ingredient_name, instruction, ingredient_order, amount) "
+			+ "VALUES (?, ? ,?, ?, ?, ?)";
+		// @formatter:on
+
+		try (Connection conn = DbConnection.getConnection()) {
+			startTransaction(conn);
+
+			// Count number of child rows in ingredient table to get ingredient order
+			try {
+				Integer order = getNextSequenceNumber(conn, ingredient.getRecipeId(), INGREDIENT_TABLE, "recipe_id");
+
+				try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+					setParameter(stmt, 1, ingredient.getRecipeId(), Integer.class);
+					setParameter(stmt, 2, ingredient.getUnit().getUnitId(), Integer.class);
+					setParameter(stmt, 3, ingredient.getIngredientName(), String.class);
+					setParameter(stmt, 4, ingredient.getInstruction(), String.class);
+					setParameter(stmt, 5, order, Integer.class);
+					setParameter(stmt, 6, ingredient.getAmount(), BigDecimal.class);
+
+					stmt.executeUpdate();
+					commitTransaction(conn);
+				}
+
+			} catch (Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+
+		} catch (SQLException e) {
+			throw new DbException(e);
+		}
+	}
+
+	public void addStepToRecipe(Step step) {
+		String sql = "INSERT INTO " + STEP_TABLE + " (recipe_id, step_order, step_text)" + " VALUES (?, ?, ?)";
+
+		try (Connection conn = DbConnection.getConnection()) {
+			startTransaction(conn);
+
+			try {
+				Integer order = getNextSequenceNumber(conn, step.getRecipeId(), STEP_TABLE, "recipe_id");
+
+				try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+					setParameter(stmt, 1, step.getRecipeId(), Integer.class);
+					setParameter(stmt, 2, order, Integer.class);
+					setParameter(stmt, 3, step.getStepText(), String.class);
+
+					stmt.executeUpdate();
+					commitTransaction(conn);
+				}
+
+			} catch (Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+
+			}
+		} catch (SQLException e) {
+			throw new DbException(e);
+		}
+
+	} // end addStepToRecipe
+
+	public List<Category> fetchAllCategories() {
+		String sql = "SELECT * FROM " + CATEGORY_TABLE + " ORDER BY category_name";
+
+		try (Connection conn = DbConnection.getConnection()) {
+			startTransaction(conn);
+
+			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+				try (ResultSet rs = stmt.executeQuery()) {
+					List<Category> categories = new LinkedList<>();
+
+					while (rs.next()) {
+						categories.add(extract(rs, Category.class));
+					}
+
+					return categories;
+				}
+
+			} catch (Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+
+		} catch (SQLException e) {
+			throw new DbException(e);
+		}
+
+	} // end fetchAllCategories
+
+	public void addCategoryToRecipe(Integer recipeId, String category) {
+		// Subqueries must be inside parentheses
+		String subQuery = "(SELECT category_id FROM " + CATEGORY_TABLE + " WHERE category_name = ?)";
+
+		String sql = "INSERT INTO " + RECIPE_CATEGORY_TABLE + " (recipe_id, category_id) VALUES (?, " + subQuery + ")";
+
+		try (Connection conn = DbConnection.getConnection()) {
+			startTransaction(conn);
+
+			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+				setParameter(stmt, 1, recipeId, Integer.class);
+				setParameter(stmt, 2, category, String.class);
+
+				stmt.executeUpdate();
+				commitTransaction(conn);
+
+			} catch (Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+
+		} catch (SQLException e) {
+			throw new DbException(e);
+		}
+
+	} // end addCategoryToRecipe
+
+	// There is already a fetchRecipeSteps method that takes a connection object and
+	// recipeId. All we have to do is create
+	// the connection object.
+	public List<Step> fetchRecipeSteps(Integer recipeId) {
+
+		// fetchRecipeSteps already exists but requires a connection object
+		try (Connection conn = DbConnection.getConnection()) {
+			startTransaction(conn);
+
+			try {
+				List<Step> steps = fetchRecipeSteps(conn, recipeId);
+				commitTransaction(conn);
+
+				return steps;
+
+			} catch (Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+
+		} catch (SQLException e) {
+			throw new DbException(e);
+		}
+	} // end fetchRecipeSteps
+
+	public boolean modifyRecipeStep(Step step) {
+		String sql = "UPDATE " + STEP_TABLE + " SET step_text = ? WHERE step_id = ?";
+
+		try (Connection conn = DbConnection.getConnection()) {
+			startTransaction(conn);
+
+			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+				setParameter(stmt, 1, step.getStepText(), String.class);
+				setParameter(stmt, 2, step.getStepId(), Integer.class);
+
+				// executeUpdate() returns a value that represents the number of rows affected.
+				// We have been ignoring it before now.
+				// We expect to update one row so the return value should be 1, which will set updated to True.
+				boolean updated = stmt.executeUpdate() == 1;
+				commitTransaction(conn);
+
+				// returns True if 1 row was affected, which is what we expect. Returns False if
+				// 0 rows were affected.
+				return updated;
+
+			} catch (Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+
+		} catch (SQLException e) {
+			throw new DbException(e);
+		}
+	} // end modifyRecipeStep
+
+	public boolean deleteRecipe(Integer recipeId) {
+		String sql = "DELETE FROM " + RECIPE_TABLE + " WHERE recipe_id = ?";
+
+		try (Connection conn = DbConnection.getConnection()) {
+			startTransaction(conn);
+
+			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+				setParameter(stmt, 1, recipeId, Integer.class);
+
+				// executeUpdate() returns a value that represents the number of rows affected.
+				// We have been ignoring it before now.
+				// We expect to update one row so the return value should be 1, which will set updated to True.
+				boolean updated = stmt.executeUpdate() == 1;
+				commitTransaction(conn);
+
+				// returns True if 1 row was affected, which is what we expect. Returns False if
+				// 0 rows were affected.
+				return updated;
+
+			} catch (DbException e) {
+				rollbackTransaction(conn);
+				throw new DbException();
+			}
+
+		} catch (SQLException e) {
+			throw new DbException(e);
+		}
+	} // end deleteRecipe
 
 } // end CLASS
