@@ -180,7 +180,7 @@ public class RecipeDao extends DaoBase {
 		// @formatter:off
 		String sql = "" + "INSERT INTO " + RECIPE_TABLE + " "
 			+ "(recipe_name, notes, num_servings, prep_time, cook_time) "
-			+ "VALUES"
+			+ "VALUES "
 			+ "(?, ?, ?, ?, ?)";
 		// @formatter:on	
 
